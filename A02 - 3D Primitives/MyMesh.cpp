@@ -275,8 +275,21 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	float angle = 2 * PI / a_nSubdivisions;//Calculates angle of subdivisions
+
+	vector3 bottomCenter(0, a_fHeight * -0.5f, 0);//Is the center of the base of the cone
+	vector3 topCenter(0, a_fHeight * 0.5f, 0);//The tip of the cone
+
+	//creates the cone's vertex points
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//Creates the vertices of one face of the cone, one section of the base circle
+		vector3 botLeft(cos(angle*i) * a_fRadius, a_fHeight * -0.5f, sin(angle*i) * a_fRadius);
+		vector3 botRight(cos(angle*(i + 1)) * a_fRadius, a_fHeight * -0.5f, sin(angle*(i + 1)) * a_fRadius);
+		//Generates the tris
+		AddTri(botRight, botLeft, bottomCenter);//Creates the base circle tri
+		AddTri(botLeft, botRight, topCenter);//Creates the tri on the side of the cone
+	}
 	// -------------------------------
 
 	// Adding information about color
@@ -299,8 +312,28 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	float angle = 2 * PI / a_nSubdivisions;//Calculates angle of subdivisions
+
+	vector3 bottomCenter(0, a_fHeight * -0.5f, 0);//Center of the lower circle
+	vector3 topCenter(0, a_fHeight * 0.5f, 0);//Center of the upper circle
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//Creates vertices for the top circle of the cylinder
+		vector3 botLeftTop(cos(angle*i) * a_fRadius, a_fHeight * 0.5f, sin(angle*i) * a_fRadius);
+		vector3 botRightTop(cos(angle*(i + 1)) * a_fRadius, a_fHeight * 0.5f, sin(angle*(i + 1)) * a_fRadius);
+
+		//Creates vertices for the bottom circle of the cylinder
+		vector3 botLeftBottom(cos(angle*i) * a_fRadius, a_fHeight * -0.5f, sin(angle*i) * a_fRadius);
+		vector3 botRightBottom(cos(angle*(i + 1)) * a_fRadius, a_fHeight * -0.5f, sin(angle*(i + 1)) * a_fRadius);
+
+		//Generates tris for the circle bases
+		AddTri(botRightTop, botLeftTop, topCenter);
+		AddTri(botLeftBottom, botRightBottom, bottomCenter);
+
+		//Generates quad to make up body of the cylinder
+		AddQuad(botRightBottom, botLeftBottom, botRightTop, botLeftTop);
+	}
 	// -------------------------------
 
 	// Adding information about color
@@ -329,9 +362,39 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	float angle = 2 * PI / a_nSubdivisions;//Calculates angle of subdivisions
+
+	for(int i = 0; i < a_nSubdivisions; i++)
+	{
+		//Generate points for outer circle: top
+		vector3 outerTopLeft(cos(angle*i) * a_fOuterRadius, a_fHeight * 0.5f, sin(angle*i) * a_fOuterRadius);
+		vector3 outerTopRight(cos(angle*(i + 1)) * a_fOuterRadius, a_fHeight * 0.5f, sin(angle*(i + 1)) * a_fOuterRadius);
+
+		//Generate points for outer circle: bottom
+		vector3 outerBotLeft(cos(angle*i) * a_fOuterRadius, a_fHeight * -0.5f, sin(angle*i) * a_fOuterRadius);
+		vector3 outerBotRight(cos(angle*(i + 1)) * a_fOuterRadius, a_fHeight * -0.5f, sin(angle*(i + 1)) * a_fOuterRadius);
+
+		//Generate points for inner circle: top
+		vector3 innerTopLeft(cos(angle*i) * a_fInnerRadius, a_fHeight * 0.5f, sin(angle*i) * a_fInnerRadius);
+		vector3 innerTopRight(cos(angle*(i + 1)) * a_fInnerRadius, a_fHeight * 0.5f, sin(angle*(i + 1)) * a_fInnerRadius);
+
+		//Generate points for inner circle: bottom
+		vector3 innerBotLeft(cos(angle*i) * a_fInnerRadius, a_fHeight * -0.5f, sin(angle*i) * a_fInnerRadius);
+		vector3 innerBotRight(cos(angle*(i + 1)) * a_fInnerRadius, a_fHeight * -0.5f, sin(angle*(i + 1)) * a_fInnerRadius);
+
+		//Generate quads for top faces
+		AddQuad(outerTopRight, outerTopLeft, innerTopRight, innerTopLeft);
+
+		//Generate quads for bottom faces
+		AddQuad(outerBotLeft, outerBotRight, innerBotLeft, innerBotRight);
+
+		//Generate quads for exterior faces
+		AddQuad(outerBotRight, outerBotLeft, outerTopRight, outerTopLeft);
+
+		//Generate quads for interior faces
+		AddQuad(innerTopRight, innerTopLeft, innerBotRight, innerBotLeft);
+
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -380,15 +443,66 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		GenerateCube(a_fRadius * 2.0f, a_v3Color);
 		return;
 	}
-	if (a_nSubdivisions > 6)
-		a_nSubdivisions = 6;
+	if (a_nSubdivisions > 360)
+		a_nSubdivisions = 360;
 
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	vector3 sphereTop(0, a_fRadius * 1.15, 0);//Point at the top of the sphere
+	vector3 sphereBot(0, -a_fRadius * 1.15, 0);//Point at the bottom of the sphere
+
+	float angle = PI / a_nSubdivisions;
+	float xzAngle = 2 * PI / a_nSubdivisions;
+	float radiusDivisions = a_fRadius / a_nSubdivisions;
+
+	for(int i = 0; i < a_nSubdivisions; i++)
+	{
+		//Create the Y value for the first subdivision
+		float yValOne = sin(angle*i) * a_fRadius;
+		float radOne = radiusDivisions + radiusDivisions * (a_nSubdivisions - i);
+
+		//Create the Y value for the second/next subdivision
+		float yValTwo = sin(angle * (i + 1)) * a_fRadius;
+		float radTwo = radiusDivisions + radiusDivisions * (a_nSubdivisions - i - 1);
+
+		/*
+		   Generates points then faces for the current divisions
+		   If i == 0, generate tris for the top point and the first circle's points AND the quads for the first and second circle
+		   if i == subDivisions - 1, generate the quads for the second to last and the last circle's points AND the tris for the last circle and the bottom point
+		   else, it will only generate the quads between the first and second circle's points
+		*/
+			for(int j = 0; j < a_nSubdivisions; j++)
+			{
+				//upper hemisphere coordinates - first division
+				vector3 topLeft(sin(xzAngle*j) * radOne, yValOne, cos(xzAngle*j)* radOne);
+				vector3 topRight(sin(xzAngle*(j + 1)) * radOne, yValOne, cos(xzAngle*(j + 1)) * radOne);
+
+				//upper hemisphere coordinates - second division
+				vector3 botLeft(sin(xzAngle*j) * radTwo, yValTwo, cos(xzAngle*j) * radTwo);
+				vector3 botRight(sin(xzAngle*(j + 1)) * radTwo, yValTwo, cos(xzAngle*(j + 1)) * radTwo);
+
+				//lower hemisphere coordinates - first division
+				vector3 lowerTopLeft(topLeft.x, topLeft.y, topLeft.z);
+				lowerTopLeft.y *= -1;
+				vector3 lowerTopRight(topRight.x, topRight.y, topRight.z);
+				lowerTopRight.y *= -1;
+
+				//lower hemisphere coordinates - second division
+				vector3 lowerBotLeft(botLeft.x, botLeft.y, botLeft.z);
+				lowerBotLeft.y *= -1;
+				vector3 lowerBotRight(botRight.x, botRight.y, botRight.z);
+				lowerBotRight.y *= -1;
+
+				//Adds faces of exterior shape
+				AddQuad(botRight, botLeft, topRight, topLeft);
+				AddQuad(lowerTopRight, lowerTopLeft, lowerBotRight, lowerBotLeft);
+
+				//Adds tris that make up the top and bottom of the sphere
+				AddTri(topLeft, topRight, sphereTop);
+				AddTri(lowerTopRight, lowerTopLeft, sphereBot);
+			}
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
