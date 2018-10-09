@@ -1,8 +1,11 @@
 #include "AppClass.h"
+
+std::vector<std::vector<vector3>> orbitNodes;//This is the vector that holds the vectors of vector3 variables that represent the nodes along the orbits
+std::vector<int> currentStops;//Holds each orbit's nodes current stop
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Greg Gonzalez - ggg2197@rit.edu";
 	
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
@@ -38,6 +41,18 @@ void Application::InitVariables(void)
 		m_shapeList.push_back(m_pMeshMngr->GenerateTorus(fSize, fSize - 0.1f, 3, i, v3Color)); //generate a custom torus and add it to the meshmanager
 		fSize += 0.5f; //increment the size for the next orbit
 		uColor -= static_cast<uint>(decrements); //decrease the wavelength
+
+		std::vector<vector3> nodes;//Nodes for this orbit
+		float angle = 2.0f * PI / i;//Current angle that determines subdivisions 
+		//Generate the orbit nodes for each orbit
+		for(int j = 0; j < i; j++)
+		{
+			vector3 node(cos(angle * j), sin(angle * j), 0.0f);//Generates the node
+			node *= (fSize - 0.5f);//Sizes node to the radius
+			nodes.push_back(node);//Adds this node to the current list of nodes
+		}
+		orbitNodes.push_back(nodes);
+		currentStops.push_back(0);//Sets the first current stop to 0
 	}
 }
 void Application::Update(void)
@@ -64,15 +79,39 @@ void Application::Display(void)
 	*/
 	//m4Offset = glm::rotate(IDENTITY_M4, 1.5708f, AXIS_Z);
 
-	// draw a shapes
-	for (uint i = 0; i < m_uOrbits; ++i)
+	//Other variables
+	//Get a timer
+	static float fTimer = 0;//store the new timer
+	static uint uClock = m_pSystem->GenClock(); //generate a new clock for that timer
+	fTimer += m_pSystem->GetDeltaTime(uClock); //get the delta time for that timer
+
+	float timeBetweenStops = 2.0f;//Time between one stop and another
+
+	// draw shapes
+	for (int i = 0; i < m_uOrbits; i++)
 	{
 		m_pMeshMngr->AddMeshToRenderList(m_shapeList[i], glm::rotate(m4Offset, 1.5708f, AXIS_X));
 
 		//calculate the current position
-		vector3 v3CurrentPos = ZERO_V3;
-		matrix4 m4Model = glm::translate(m4Offset, v3CurrentPos);
+		//v3CurrentPos = glm::lerp(m_stopsList[currentStop], m_stopsList[(currentStop + 1) % m_stopsList.size()], fTimer / timeBetweenStops);
+		vector3 v3CurrentPos = glm::lerp(orbitNodes[i][currentStops[i]], orbitNodes[i][(currentStops[i] + 1) % orbitNodes[i].size()], fTimer / timeBetweenStops);
+		//								Node list i and currentStop i,	 Node list i and the next stop modulus the list size		By the deltaTime
 
+		//Checks if timer has exceeded time between stops
+		if (fTimer >= timeBetweenStops)
+		{
+			//Loops through and sets the new current stop for each orbit
+			for(int j = 0; j < currentStops.size(); j++)
+			{
+				currentStops[j]++;
+				if (currentStops[j] == orbitNodes[j].size())
+				{
+					currentStops[j] = 0;
+				}
+			}
+			fTimer = m_pSystem->GetDeltaTime(uClock);//Resets the timer
+		}
+		matrix4 m4Model = glm::translate(m4Offset, v3CurrentPos);
 		//draw spheres
 		m_pMeshMngr->AddSphereToRenderList(m4Model * glm::scale(vector3(0.1)), C_WHITE);
 	}

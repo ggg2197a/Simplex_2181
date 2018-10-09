@@ -2,7 +2,7 @@
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Greg Gonzalez - ggg2197@rit.edu";
 
 	//Set the position and target of the camera
 	m_pCameraMngr->SetPositionTargetAndUpward(vector3(5.0f,3.0f,15.0f), ZERO_V3, AXIS_Y);
@@ -54,16 +54,19 @@ void Application::Display(void)
 	//calculate the current position
 	vector3 v3CurrentPos;
 	
+	//v3CurrentPos = vector3(0.0f, 0.0f, 0.0f);
+	static int currentStop = 0;//Current stop occupied
+	float timeBetweenStops = 2.0f;//Time between one stop and another
 
+	//Calculates current position between points
+	v3CurrentPos = glm::lerp(m_stopsList[currentStop], m_stopsList[(currentStop + 1) % m_stopsList.size()], fTimer / timeBetweenStops);
 
-
-
-	//your code goes here
-	v3CurrentPos = vector3(0.0f, 0.0f, 0.0f);
-	//-------------------
-	
-
-
+	//Checks if timer has exceeded time between stops
+	if(fTimer >= timeBetweenStops)
+	{
+		currentStop = (currentStop + 1) % m_stopsList.size();
+		fTimer = m_pSystem->GetDeltaTime(uClock);
+	}
 	
 	matrix4 m4Model = glm::translate(v3CurrentPos);
 	m_pModel->SetModelMatrix(m4Model);
