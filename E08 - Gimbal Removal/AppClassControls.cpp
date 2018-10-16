@@ -417,23 +417,23 @@ void Application::ProcessKeyboard(void)
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
 	{
 		if (fMultiplier)
-			m_v3Rotation.x -= 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(-1.0f), vector3(1.0f, 0.0f, 0.0f));//Rotates 1 degree around the X-axis
 		else
-			m_v3Rotation.x += 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(1.0f), vector3(1.0f, 0.0f, 0.0f));//Rotates 1 degree around the X-axis
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
 	{
 		if (fMultiplier)
-			m_v3Rotation.y -= 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(-1.0f), vector3(0.0f, 1.0f, 0.0f));//Rotates 1 degress around the Y-axis
 		else
-			m_v3Rotation.y += 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(1.0f), vector3(0.0f, 1.0f, 0.0f));//Rotates 1 degress around the Y-axis
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
 	{
 		if (fMultiplier)
-			m_v3Rotation.z -= 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(-1.0f), vector3(0.0f, 0.0f, 1.0f));//Rotates 1 degree around the Z-axis
 		else
-			m_v3Rotation.z += 1.0f;
+			m_qOrientation *= glm::angleAxis(glm::radians(1.0f), vector3(0.0f, 0.0f, 1.0f));//Rotates 1 degree around the Z-axis
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
 	{
