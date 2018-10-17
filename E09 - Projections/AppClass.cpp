@@ -3,7 +3,7 @@ using namespace Simplex;
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Greg Gonzalez - ggg2197@rit.edu";
 
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
@@ -49,36 +49,70 @@ void Application::Display(void)
 	switch (m_uProjection)
 	{
 	default:
-	case 1:
+	case 1://Complete
+	{
 		m_pCamera->ResetCamera();
+		m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f,0.0f,-5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
 		break;
-	case 2:
+	}
+	case 2://Complete
+	{
 		m_pCamera->ResetCamera();
+		m_pMesh1->Render(glm::perspective(45.0f, 1280.0f / 720.0f, 0.05f, 130.0f), m_pCamera->GetViewMatrix(), glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(glm::perspective(51.0f, 1280.0f / 720.0f, 0.05f, 120.0f), m_pCamera->GetViewMatrix(), glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(glm::perspective(51.0f, 640.0f / 360.0f, 0.05f, 120.0f), m_pCamera->GetViewMatrix(), glm::translate(vector3(0.0f, 0.0f, -10.0f)));
 		break;
-	case 3:
-		m_pCamera->ResetCamera();
+	}
+	case 3://Complete
+	{
+		m_pCamera->SetPositionTargetAndUpward(vector3(20, 0, 0), ZERO_V3, AXIS_Z * -1);
+		m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
+		break; 
+	}
+	case 4://Complete
+	{
+		m_pCamera->SetPositionTargetAndUpward(vector3(0,0,-15), ZERO_V3, AXIS_Y);
+		m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
 		break;
-	case 4:
-		m_pCamera->ResetCamera();
+	}
+	case 5://Complete
+	{
+		m_pCamera->SetPositionTargetAndUpward(vector3(0, 0, -15), ZERO_V3, AXIS_Y);
+		m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
 		break;
-	case 5:
-		m_pCamera->ResetCamera();
+	}
+	case 6://Complete
+	{
+		m_pCamera->SetPositionTargetAndUpward(vector3(0, 0, -15), ZERO_V3, AXIS_Y);
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
 		break;
-	case 6:
-		m_pCamera->ResetCamera();
-		break;
-	case 7:
-		m_pCamera->ResetCamera();
-		break;
+	}
+	case 7://Complete
+	{
+		m_pCamera->SetPositionTargetAndUpward(vector3(0, 0, 10), ZERO_V3, AXIS_Y * -1);
+		m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f, 0.0f, -5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+		m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
+		break; 
+	}
+
 	}
 
 	m_pCamera->CalculateProjectionMatrix();
 	m_pCamera->CalculateViewMatrix();
 
 	//draw the primitive
-	m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
-	m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f,0.0f,-5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
-	m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
+	//m_pMesh1->Render(m_pCamera, glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+	//m_pMesh2->Render(m_pCamera, glm::translate(IDENTITY_M4, vector3(0.0f,0.0f,-5.0f)) * glm::rotate(IDENTITY_M4, 1.5708f, AXIS_X));
+	//m_pMesh3->Render(m_pCamera, glm::translate(vector3(0.0f, 0.0f, -10.0f)));
 
 	//render list call
 	m_uRenderCallCount = m_pMeshMngr->Render();
