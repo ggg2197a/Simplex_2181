@@ -69,7 +69,8 @@ void Application::ProcessKeyPressed(sf::Event a_event)
 {
 	switch (a_event.key.code)
 	{
-	default: break;
+	default: 
+		break;
 	case sf::Keyboard::Space:
 		break;
 	}
@@ -283,7 +284,6 @@ void Application::ArcBall(float a_fSensitivity)
 	//If the arcball is not enabled return
 	if (!m_bArcBall)
 		return;
-
 	//static quaternion qArcBall;
 	UINT	MouseX, MouseY;		// Coordinates for the mouse
 	UINT	CenterX, CenterY;	// Coordinates for the center of the screen.
@@ -369,6 +369,9 @@ void Application::CameraRotation(float a_fSpeed)
 		fAngleX += fDeltaMouse * a_fSpeed;
 	}
 	//Change the Yaw and the Pitch of the camera
+	//Yaw goes to AngleY, Pitch goes to AngleX
+	m_pCamera->ChangeYaw(fAngleY * .25f);
+	m_pCamera->ChangePitch(fAngleX * .25f);
 	SetCursorPos(CenterX, CenterY);//Position the mouse in the center
 }
 //Keyboard
@@ -379,17 +382,25 @@ void Application::ProcessKeyboard(void)
 	for discreet on/off use ProcessKeyboardPressed/Released
 	*/
 #pragma region Camera Position
-	float fSpeed = 0.1f;
+	float fSpeed = 0.15f;
 	float fMultiplier = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
 		sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
 	if (fMultiplier)
 		fSpeed *= 5.0f;
-
+	//Controls that use the methods edited for movement of the camera
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-		m_pCamera->MoveForward(fSpeed);
-	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-		m_pCamera->MoveForward(-fSpeed);
+		m_pCamera->MoveForward(fSpeed);//Moves forward
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+		m_pCamera->MoveForward(-fSpeed);//Moves backward
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		m_pCamera->MoveSideways(-fSpeed);//Moves left
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+		m_pCamera->MoveSideways(fSpeed);//Moves right
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
+		m_pCamera->MoveVertical(-fSpeed);//Moves up
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
+		m_pCamera->MoveVertical(fSpeed);//Moves down
 #pragma endregion
 }
 //Joystick

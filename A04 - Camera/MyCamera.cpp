@@ -17,6 +17,12 @@ void Simplex::MyCamera::SetVerticalPlanes(vector2 a_v2Vertical) { m_v2Vertical =
 matrix4 Simplex::MyCamera::GetProjectionMatrix(void) { return m_m4Projection; }
 matrix4 Simplex::MyCamera::GetViewMatrix(void) { CalculateViewMatrix(); return m_m4View; }
 
+//Additional variables
+vector3 m_v3Forward;//Initialized with creation of camera
+vector3 m_v3Upward;
+vector3 m_v3Rightward;
+quaternion orientation;
+
 Simplex::MyCamera::MyCamera()
 {
 	Init(); //Init the object with default values
@@ -26,6 +32,9 @@ Simplex::MyCamera::MyCamera(vector3 a_v3Position, vector3 a_v3Target, vector3 a_
 {
 	Init(); //Initialize the object
 	SetPositionTargetAndUpward(a_v3Position, a_v3Target, a_v3Upward); //set the position, target and upward
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
 }
 
 Simplex::MyCamera::MyCamera(MyCamera const& other)
@@ -65,6 +74,9 @@ void Simplex::MyCamera::Init(void)
 	ResetCamera();
 	CalculateProjectionMatrix();
 	CalculateViewMatrix();
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
 	//No pointers to initialize here
 }
 
@@ -124,6 +136,10 @@ void Simplex::MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3
 	m_v3Target = a_v3Target;
 
 	m_v3Above = a_v3Position + glm::normalize(a_v3Upward);
+
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
 	
 	//Calculate the Matrix
 	CalculateProjectionMatrix();
@@ -132,7 +148,7 @@ void Simplex::MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3
 void Simplex::MyCamera::CalculateViewMatrix(void)
 {
 	//Calculate the look at most of your assignment will be reflected in this method
-	m_m4View = glm::lookAt(m_v3Position, m_v3Target, glm::normalize(m_v3Above - m_v3Position)); //position, target, upward
+	m_m4View = glm::lookAt(m_v3Position, m_v3Target, m_v3Upward); //position, target, upward
 }
 
 void Simplex::MyCamera::CalculateProjectionMatrix(void)
@@ -152,11 +168,83 @@ void Simplex::MyCamera::CalculateProjectionMatrix(void)
 
 void MyCamera::MoveForward(float a_fDistance)
 {
-	//The following is just an example and does not take in account the forward vector (AKA view vector)
-	m_v3Position += vector3(0.0f, 0.0f,-a_fDistance);
-	m_v3Target += vector3(0.0f, 0.0f, -a_fDistance);
-	m_v3Above += vector3(0.0f, 0.0f, -a_fDistance);
+	//Adds the forward vector multiplied by the distance to each of the vectors representing the camera (Position, Target, and Above)
+	m_v3Position += m_v3Forward * a_fDistance;
+	m_v3Target += m_v3Forward * a_fDistance;
+	m_v3Above += m_v3Forward * a_fDistance;
+
+	//Resets the normal vectors with every pass of this method
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
+
+	//Re-calculates the matrices
+	CalculateProjectionMatrix();
+	CalculateViewMatrix();
 }
 
-void MyCamera::MoveVertical(float a_fDistance){}//Needs to be defined
-void MyCamera::MoveSideways(float a_fDistance){}//Needs to be defined
+void MyCamera::MoveVertical(float a_fDistance)
+{
+	//Adds the Upward vector multiplied by the distance to each of the vectors representing the camera (Position, Target, and Above)
+	m_v3Position += m_v3Upward * a_fDistance;
+	m_v3Target += m_v3Upward * a_fDistance;
+	m_v3Above += m_v3Upward * a_fDistance;
+
+	//Resets the normal vectors with every pass of this method
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
+
+	//Re-calculates the matrices
+	CalculateProjectionMatrix();
+	CalculateViewMatrix();
+}
+void MyCamera::MoveSideways(float a_fDistance)
+{
+	//Adds the right-facing vector multiplied by the distance to each of the vectors representing the camera (Position, Target, and Above)
+	m_v3Position += m_v3Rightward * a_fDistance;
+	m_v3Target += m_v3Rightward * a_fDistance;
+	m_v3Above += m_v3Rightward * a_fDistance;
+
+	//Resets the normal vectors with every pass of this method
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
+
+	//Re-calculates the matrices
+	CalculateProjectionMatrix();
+	CalculateViewMatrix();
+}
+
+void Simplex::MyCamera::ChangeYaw(float angle)
+{
+	//Creates a quaternion to apply to the target's position - rotation by the angle around the upward axis
+	quaternion q1 = glm::angleAxis(angle, m_v3Upward);
+	m_v3Target = m_v3Position + glm::rotate(q1, (m_v3Target- m_v3Position));
+
+	//Resets the normal vectors with every pass of this method
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
+
+	//Re-calculates the matrices
+	CalculateProjectionMatrix();
+	CalculateViewMatrix();
+}
+
+void Simplex::MyCamera::ChangePitch(float angle)
+{
+	//Creates a quaternion to apply to the target's position and the above vector - This ensures the above vector and the target get set up properly to tilt both vectors properly along the right vector
+	quaternion q1 = glm::angleAxis(angle, m_v3Rightward);
+	m_v3Target = m_v3Position + glm::rotate(q1, (m_v3Target - m_v3Position));
+	m_v3Above = m_v3Position + glm::rotate(q1, m_v3Above - m_v3Position);
+
+	//Resets the normal vectors with every pass of this method
+	m_v3Forward = glm::normalize(m_v3Target - m_v3Position);
+	m_v3Upward = glm::normalize(m_v3Above - m_v3Position);
+	m_v3Rightward = glm::normalize(glm::cross(m_v3Forward, m_v3Upward));
+	
+	//Re-calculates the matrices
+	CalculateProjectionMatrix();
+	CalculateViewMatrix();
+}
