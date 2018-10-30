@@ -85,8 +85,50 @@ void MyRigidBody::SetModelMatrix(matrix4 a_m4ModelMatrix)
 	m_m4ToWorld = a_m4ModelMatrix;
 	
 	//your code goes here---------------------
-	m_v3MinG = m_v3MinL;
-	m_v3MaxG = m_v3MaxL;
+	//Calculate the cube's 8 corners
+	vector3 corners[8];
+	//Back square
+	corners[0] = m_v3MinL;//Lower left corner
+	corners[1] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MinL.z);//Lower right corner
+	corners[2] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MinL.z);//Upper left corner
+	corners[3] = vector3(m_v3MaxL.x, m_v3MaxL.y, m_v3MinL.z);//Upper right corner
+
+	//Front square
+	corners[4] = vector3(m_v3MinL.x, m_v3MinL.y, m_v3MaxL.z);//Lower left corner
+	corners[5] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MaxL.z);//Lower right corner
+	corners[6] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MaxL.z);//Upper left corner
+	corners[7] = m_v3MaxL;//Upper right corner
+
+	//Adjusts to world space
+	for (uint uIndex = 0; uIndex < 8; uIndex++)
+	{
+		corners[uIndex] = vector3(m_m4ToWorld * vector4(corners[uIndex], 1.0f));
+	}
+
+	//Identify the max and min as the first corner
+	m_v3MaxG = m_v3MinG = corners[0];
+
+	//get the new max and min for the global box
+	for (uint i = 1; i < 8; i++)//Checking all coordinates for changes in which is the max and min
+	{
+		//Checking X coordinates against max and min
+		if(m_v3MaxG.x < corners[i].x)
+			m_v3MaxG.x = corners[i].x;
+		else if(m_v3MinG.x > corners[i].x)
+			m_v3MinG.x = corners[i].x;
+
+		//Checking Y coordinates against max and min
+		if(m_v3MaxG.y < corners[i].y)
+			m_v3MaxG.y = corners[i].y;
+		else if(m_v3MinG.y > corners[i].y)
+			m_v3MinG.y = corners[i].y;
+
+		//Checking Z coordinates against max and min
+		if(m_v3MaxG.z < corners[i].z)
+			m_v3MaxG.z = corners[i].z;
+		else if(m_v3MinG.z > corners[i].z)
+			m_v3MinG.z = corners[i].z;
+	}
 	//----------------------------------------
 
 	//we calculate the distance between min and max vectors

@@ -286,6 +286,159 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	Simplex that might help you [eSATResults] feel free to use it.
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
+	//Generate axes for this object; gets orientation of object and axes of it
+	vector3 xOrientation = glm::normalize(vector3(m_m4ToWorld * vector4(AXIS_X, 1.0f))) + m_v3Center;
+	vector3 yOrientation = glm::normalize(vector3(m_m4ToWorld * vector4(AXIS_Y, 1.0f))) + m_v3Center;
+	vector3 zOrientation = glm::normalize(vector3(m_m4ToWorld * vector4(AXIS_Z, 1.0f))) + m_v3Center;
+
+	//Generates axes for the target/other object; gets orientation of the object
+	vector3 xOrientationOther = glm::normalize(vector3(a_pOther->m_m4ToWorld * vector4(AXIS_X, 1.0f))) + a_pOther->m_v3Center;
+	vector3 yOrientationOther = glm::normalize(vector3(a_pOther->m_m4ToWorld * vector4(AXIS_Y, 1.0f))) + a_pOther->m_v3Center;
+	vector3 zOrientationOther = glm::normalize(vector3(a_pOther->m_m4ToWorld * vector4(AXIS_Z, 1.0f))) + a_pOther->m_v3Center;
+
+	//Generate the points of the bounding box from the min and max for both objects
+	vector3 corners[8];//This is the first object in the collision check's vertices
+	//Back square
+	corners[0] = m_v3MinL;//Lower left corner
+	corners[1] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MinL.z);//Lower right corner
+	corners[2] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MinL.z);//Upper left corner
+	corners[3] = vector3(m_v3MaxL.x, m_v3MaxL.y, m_v3MinL.z);//Upper right corner
+
+	//Front square
+	corners[4] = vector3(m_v3MinL.x, m_v3MinL.y, m_v3MaxL.z);//Lower left corner
+	corners[5] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MaxL.z);//Lower right corner
+	corners[6] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MaxL.z);//Upper left corner
+	corners[7] = m_v3MaxL;//Upper right corner
+
+	vector3 cornersOther[8];//These are the vertices of a_pOther
+	//Back square
+	cornersOther[0] = a_pOther->m_v3MinL;//Lower left corner
+	cornersOther[1] = vector3(a_pOther->m_v3MaxL.x, a_pOther->m_v3MinL.y, a_pOther->m_v3MinL.z);//Lower right corner
+	cornersOther[2] = vector3(a_pOther->m_v3MinL.x, a_pOther->m_v3MaxL.y, a_pOther->m_v3MinL.z);//Upper left corner
+	cornersOther[3] = vector3(a_pOther->m_v3MaxL.x, a_pOther->m_v3MaxL.y, a_pOther->m_v3MinL.z);//Upper right corner
+
+	//Front square
+	cornersOther[4] = vector3(a_pOther->m_v3MinL.x, a_pOther->m_v3MinL.y, a_pOther->m_v3MaxL.z);//Lower left corner
+	cornersOther[5] = vector3(a_pOther->m_v3MaxL.x, a_pOther->m_v3MinL.y, a_pOther->m_v3MaxL.z);//Lower right corner
+	cornersOther[6] = vector3(a_pOther->m_v3MinL.x, a_pOther->m_v3MaxL.y, a_pOther->m_v3MaxL.z);//Upper left corner
+	cornersOther[7] = a_pOther->m_v3MaxL;//Upper right corner
+
+	//Create and project the points onto the 15 checkable axes;
+	//The X, Y, and Z axes of each object
+	//Then the cross products of each combination
+	/* Here it is written out, for the sake of not having to look for it again
+	   X, Y, Z and Xo, Yo, Zo
+	   X cross Xo, X cross Yo, X cross Zo
+	   Y cross Xo, Y cross Yo, Z cross Zo
+	   Z cross Xo, Z cross Yo, Z cross Zo
+	   Easy, right? Right.                                                  */
+	for(int i = 0; i < 15; i++)
+	{
+		vector3 plane;
+		//Max and min to be calculated per run
+		vector3 max;
+		vector3 min;
+		//Max and min of the other object to be calculated per run
+		vector3 maxOth;
+		vector3 minOth;
+		switch(i)
+		{
+		case 0://X-axis test
+			plane = xOrientation;
+			break;
+		case 1://Y-axis test
+			plane = yOrientation;
+			break;
+		case 2://Z-axis test
+			plane = zOrientation;
+			break;
+		case 3://X-axis of the other object
+			plane = xOrientationOther;
+			break;
+		case 4://Y-axis of the other object
+			plane = yOrientationOther;
+			break;
+		case 5://Z-axis of the other object
+			plane = zOrientationOther;
+			break;
+		case 6://Vector created by cross product of the X axes
+			plane = glm::cross(xOrientation, xOrientationOther);
+			break;
+		case 7://Vector created by cross product of the X axis and the other object's Y-axis
+			plane = glm::cross(xOrientation, yOrientationOther);
+			break;
+		case 8://Vector created by cross product of the X axis and the other object's Z-axis
+			plane = glm::cross(xOrientation, zOrientationOther);
+			break;
+		case 9://Vector created by cross product of the Y axis and the other object's X-axis
+			plane = glm::cross(yOrientation, xOrientationOther);
+			break;
+		case 10://Vector created by cross product of the Y axes
+			plane = glm::cross(yOrientation, yOrientationOther);
+			break;
+		case 11://Vector created by cross product of the Y axis and the other object's Z-axis
+			plane = glm::cross(yOrientation, zOrientationOther);
+			break;
+		case 12://Vector created by cross product of the Z axis and the other object's X-axis
+			plane = glm::cross(zOrientation, xOrientationOther);
+			break;
+		case 13://Vector created by cross product of the Z axis and the other object's Y-axis
+			plane = glm::cross(zOrientation, yOrientationOther);
+			break;
+		case 14://Vector created by cross product of the Z axes
+			plane = glm::cross(zOrientation, zOrientationOther);
+			break;
+		}
+		//Check that it isn't a zero vector; could cause undue errors for now
+		if(plane == ZERO_V3)
+			continue;
+		//Check all vertices for overlap compared to the centers of the objects
+		/*Do so by projecting the 8 vertices of the objects onto the current plane,
+		  Then compare the distances first between the points to find a maximum, then a minimum.
+		  After these points are found for both objects, check if there is overlap;
+		  Overlap occurs when any maximum is more than the minimum of the other object*/
+		
+		//Checking for max and min for first object
+		for(int i = 0; i < corners->length(); i++)
+		{
+			vector3 temp = glm::proj(corners[i], plane);
+			if(i == 0)//Auto-sets the first corner as the max first
+			{
+				max = temp;
+				continue;
+			}
+			if(temp.length > max.length)//If the current vertice is greater than the current one, sets a new max on this plane
+				max = temp;
+			if(i == 1 && temp.length < max.length)//If comparing the first corner to the very next corner, and temp is less than the current max
+				min = temp;//Set as the min
+			if(temp.length < min.length)//Checks the temp against the current min
+				min = temp;
+		}
+
+		//Checking for max and min for the other object
+		for (int i = 0; i < cornersOther->length(); i++)
+		{
+			vector3 temp = glm::proj(cornersOther[i], plane);
+			if (i == 0)//Auto-sets the first corner as the max first
+			{
+				maxOth = temp;
+				continue;
+			}
+			if (temp.length > maxOth.length)//If the current vertice is greater than the current one, sets a new max on this plane
+				maxOth = temp;
+			if (i == 1 && temp.length < maxOth.length)//If comparing the first corner to the very next corner, and temp is less than the current max
+				minOth = temp;//Set as the min
+			if (temp.length < minOth.length)//Checks the temp against the current min
+				minOth = temp;
+		}
+
+		if(max.length < minOth.length)
+			return 1;
+		if (maxOth.length < min.length)
+			return 1;
+
+	}
+
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
