@@ -278,15 +278,21 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
 	//Generate axes for this object; gets orientation of object and axes of it
 	vector3 axes[3];
-	axes[0] = glm::normalize(vector3(vector4(AXIS_X, 0.0f) * m_m4ToWorld) + m_v3Center);
-	axes[1] = glm::normalize(vector3(vector4(AXIS_Y, 0.0f) * m_m4ToWorld) + m_v3Center);
-	axes[2] = glm::normalize(vector3(vector4(AXIS_Z, 0.0f) * m_m4ToWorld) + m_v3Center);
+	axes[0] = vector3(vector4(1, 0, 0, 0) * m_m4ToWorld);
+	axes[0] = glm::normalize(axes[0]);
+	axes[1] = vector3(vector4(AXIS_Y, 0.0f) * m_m4ToWorld);
+	axes[1] = glm::normalize(axes[1]);
+	axes[2] = vector3(vector4(AXIS_Z, 0.0f) * m_m4ToWorld);
+	axes[2] = glm::normalize(axes[2]);
 
 	//Generates axes for the target/other object; gets orientation of the object
 	vector3 axesOth[3];
-	axesOth[0] = glm::normalize(vector3(vector4(AXIS_X, 0.0f) * a_pOther->m_m4ToWorld) + a_pOther->m_v3Center);
-	axesOth[1] = glm::normalize(vector3(vector4(AXIS_Y, 0.0f) * a_pOther->m_m4ToWorld) + a_pOther->m_v3Center);
-	axesOth[2] = glm::normalize(vector3(vector4(AXIS_Z, 0.0f) * a_pOther->m_m4ToWorld) + a_pOther->m_v3Center);
+	axesOth[0] = vector3(vector4(AXIS_X, 0.0f) * a_pOther->m_m4ToWorld);
+	axesOth[0] = glm::normalize(axesOth[0]);
+	axesOth[1] = vector3(vector4(AXIS_Y, 0.0f) * a_pOther->m_m4ToWorld);
+	axesOth[1] = glm::normalize(axesOth[1]);
+	axesOth[2] = vector3(vector4(AXIS_Z, 0.0f) * a_pOther->m_m4ToWorld);
+	axesOth[2] = glm::normalize(axesOth[2]);
 
 	//Rotation of a_pOther in this object's coordinate frame
 	matrix3 rotation;
@@ -298,18 +304,22 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	matrix3 rotationO;
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			rotationO[i][j] = rotation[i][j] + DBL_EPSILON;
+			rotationO[i][j] = rotation[i][j] + 0.05f;
 
 	//Distance between the two centers of the boxes
-	vector3 totalD = a_pOther->m_v3Center - m_v3Center;
+	//vector3 totalD = vector3(vector4(a_pOther->m_v3Center, 0.0f) * a_pOther->m_m4ToWorld - vector4(m_v3Center, 0.0f) * m_m4ToWorld);
+	vector3 centerPoint = vector3((m_v3MaxG.x + m_v3MinG.x) / 2, (m_v3MaxG.y + m_v3MinG.y) / 2, (m_v3MaxG.z + m_v3MinG.z) / 2);
+	vector3 centerPointOther = vector3((a_pOther->m_v3MaxG.x + a_pOther->m_v3MinG.x) / 2, (a_pOther->m_v3MaxG.y + a_pOther->m_v3MinG.y) / 2, (a_pOther->m_v3MaxG.z + a_pOther->m_v3MinG.z) / 2);
+	vector3 totalD = centerPointOther - centerPoint;
 	totalD = vector3(glm::dot(totalD, axes[0]), glm::dot(totalD, axes[1]), glm::dot(totalD, axes[2]));
 	//The distances from the center to the end of the box on this axis
 	float dist, distOth;
 	//Checking the axes of this object
 	for(int i = 0; i < 3; i++)
 	{
-		dist = m_v3HalfWidth[i];
-		distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[i][0]) + (a_pOther->m_v3HalfWidth[1] * rotationO[i][1]) + (a_pOther->m_v3HalfWidth[2] * rotationO[i][2]);
+		//dist = m_v3HalfWidth[i];
+		dist = centerPoint[i] + m_v3MaxG[i];
+		distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[i][0] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[i][1] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[i][2];
 		if(abs(totalD[i]) > dist + distOth)
 			return 1;
 	}
@@ -317,68 +327,68 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	//Checking based on the axes of the other object
 	for(int i = 0; i < 3; i++)
 	{
-		dist = (m_v3HalfWidth[0] * rotationO[0][i]) + (m_v3HalfWidth[1] * rotationO[1][i]) + (m_v3HalfWidth[2] * rotationO[2][i]);
-		distOth = a_pOther->m_v3HalfWidth[i];
+		dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[i][0] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[i][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[i][2];
+		distOth = centerPointOther[i] + a_pOther->m_v3MaxG[i];
 		if (abs((totalD[0] * rotation[0][i]) + (totalD[1] * rotation[1][i]) + (totalD[2] * rotation[2][i])) > dist + distOth)
 			return 1;
 	}
 	//Checking X-Axis cross other axes
 
 	//Check; this.x-axis cross other.x-axis
-	dist = (m_v3HalfWidth[1] * rotationO[2][0]) + (m_v3HalfWidth[2] * rotationO[1][0]);
-	distOth = (a_pOther->m_v3HalfWidth[1] * rotationO[0][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[0][1]);
+	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][0] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[1][0];
+	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[0][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[0][1];
 	if (abs((totalD[2] * rotation[1][0]) - (totalD[1] * rotation[2][0])) > dist + distOth)
 		return 1;
 
 	//Check; this.x-axis cross other.y-axis
-	dist = (m_v3HalfWidth[1] * rotationO[2][1]) + (m_v3HalfWidth[2] * rotationO[1][1]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[0][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[0][0]);
+	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[1][1];
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[0][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[0][0];
 	if (abs((totalD[2] * rotation[1][1]) - (totalD[1] * rotation[2][1])) > dist + distOth)
 		return 1;
 
 	//Check; this.x-axis cross other.z-axis
-	dist = (m_v3HalfWidth[1] * rotationO[2][2]) + (m_v3HalfWidth[2] * rotationO[1][2]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[0][1]) + (a_pOther->m_v3HalfWidth[1] * rotationO[0][0]);
+	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][2] + (m_v3HalfWidth[2] * rotationO[1][2]);
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[0][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[0][0];
 	if (abs((totalD[2] * rotation[1][2]) - (totalD[1] * rotation[2][2])) > dist + distOth)
 		return 1;
 
 	//Done checking X-axis, moving to Y-Axis cross other axes
 
 	//Check; this.y-axis cross other.x-axis
-	dist = (m_v3HalfWidth[0] * rotationO[2][0]) + (m_v3HalfWidth[2] * rotationO[0][0]);
-	distOth = (a_pOther->m_v3HalfWidth[1] * rotationO[1][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[1][1]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][0] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][0];
+	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[1][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[1][1];
 	if (abs((totalD[0] * rotation[2][0]) - (totalD[2] * rotation[0][0])) > dist + distOth)
 		return 1;
 
 	//Check; this.y-axis cross other.y-axis
-	dist = (m_v3HalfWidth[0] * rotationO[2][1]) + (m_v3HalfWidth[2] * rotationO[0][1]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[1][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[1][0]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][1];
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[1][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[1][0];
 	if (abs((totalD[0] * rotation[2][1]) - (totalD[2] * rotation[0][1])) > dist + distOth)
 		return 1;
 
 	//Check; this.y-axis cross other.z-axis
-	dist = (m_v3HalfWidth[0] * rotationO[2][2]) + (m_v3HalfWidth[2] * rotationO[0][2]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[1][1]) + (a_pOther->m_v3HalfWidth[1] * rotationO[1][0]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][2] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][2];
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[1][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[1][0];
 	if (abs((totalD[0] * rotation[2][2]) - (totalD[2] * rotation[0][2])) > dist + distOth)
 		return 1;
 
 	//Done with Y-axis; moving to  Z-axis cross other axes
 
 	//Check; this.z-axis cross other.x-axis
-	dist = (m_v3HalfWidth[0] * rotationO[1][0]) + (m_v3HalfWidth[1] * rotationO[0][0]);
-	distOth = (a_pOther->m_v3HalfWidth[1] * rotationO[2][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[2][1]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][0] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][0];
+	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[2][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[2][1];
 	if (abs((totalD[1] * rotation[0][0]) - (totalD[0] * rotation[1][0])) > dist + distOth)
 		return 1;
 
 	//Check; this.z-axis cross other.y-axis
-	dist = (m_v3HalfWidth[0] * rotationO[1][1]) + (m_v3HalfWidth[1] * rotationO[0][1]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[2][2]) + (a_pOther->m_v3HalfWidth[2] * rotationO[2][0]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][1] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][1];
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[2][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[2][0];
 	if (abs((totalD[1] * rotation[0][1]) - (totalD[0] * rotation[1][1])) > dist + distOth)
 		return 1;
 
 	//Check; this.z-axis cross other.z-axis
-	dist = (m_v3HalfWidth[0] * rotationO[1][2]) + (m_v3HalfWidth[1] * rotationO[0][2]);
-	distOth = (a_pOther->m_v3HalfWidth[0] * rotationO[2][1]) + (a_pOther->m_v3HalfWidth[1] * rotationO[2][0]);
+	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][2] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][2];
+	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[2][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[2][0];
 	if (abs((totalD[1] * rotation[0][2]) - (totalD[0] * rotation[1][2])) > dist + distOth)
 		return 1;
 
