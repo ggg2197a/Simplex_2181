@@ -276,121 +276,106 @@ void MyRigidBody::AddToRenderList(void)
 
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
-	//Generate axes for this object; gets orientation of object and axes of it
-	vector3 axes[3];
-	axes[0] = vector3(vector4(1, 0, 0, 0) * m_m4ToWorld);
-	axes[0] = glm::normalize(axes[0]);
-	axes[1] = vector3(vector4(AXIS_Y, 0.0f) * m_m4ToWorld);
-	axes[1] = glm::normalize(axes[1]);
-	axes[2] = vector3(vector4(AXIS_Z, 0.0f) * m_m4ToWorld);
-	axes[2] = glm::normalize(axes[2]);
+	struct OBB 
+	{
+		vector3 c;      // OBB center point
+		vector3 u[3];  // Local x-, y-, and z-axes
+		vector3 e;     // Positive halfwidth extents of OBB along each axis
+	};
 
-	//Generates axes for the target/other object; gets orientation of the object
-	vector3 axesOth[3];
-	axesOth[0] = vector3(vector4(AXIS_X, 0.0f) * a_pOther->m_m4ToWorld);
-	axesOth[0] = glm::normalize(axesOth[0]);
-	axesOth[1] = vector3(vector4(AXIS_Y, 0.0f) * a_pOther->m_m4ToWorld);
-	axesOth[1] = glm::normalize(axesOth[1]);
-	axesOth[2] = vector3(vector4(AXIS_Z, 0.0f) * a_pOther->m_m4ToWorld);
-	axesOth[2] = glm::normalize(axesOth[2]);
+	OBB a, b;
+	a.c = GetCenterGlobal();
+	a.e = GetHalfWidth();
+	a.u[0] = GetModelMatrix()[0];
+	a.u[1] = GetModelMatrix()[1];
+	a.u[2] = GetModelMatrix()[2];
 
-	//Rotation of a_pOther in this object's coordinate frame
-	matrix3 rotation;
+	b.c = a_pOther->GetCenterGlobal();
+	b.e = a_pOther->GetHalfWidth();
+	b.u[0] = a_pOther->GetModelMatrix()[0];
+	b.u[1] = a_pOther->GetModelMatrix()[1];
+	b.u[2] = a_pOther->GetModelMatrix()[2];
+	float ra, rb;
+	matrix3 R, AbsR;
+
+	// Compute rotation matrix expressing b in a's coordinate frame
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			rotation[i][j] = glm::dot(axes[i], axesOth[j]);
+			R[i][j] = glm::dot(a.u[i], b.u[j]);
 
-	//Matrix with offset to account for parallel edges
-	matrix3 rotationO;
+	// Compute translation vector3 t
+	vector3 t = b.c - a.c;
+	// Bring translation into a's coordinate frame
+	t = vector3(glm::dot(t, a.u[0]), glm::dot(t, a.u[1]), glm::dot(t, a.u[2]));
+
+	// Compute common subexpressions. Add in an epsilon term to
+	// counteract arithmetic errors when two edges are parallel and
+	// their cross product is (near) null (see text for details)
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			rotationO[i][j] = rotation[i][j] + 0.05f;
+			AbsR[i][j] = glm::abs(R[i][j]) + 0.00001f;
 
-	//Distance between the two centers of the boxes
-	//vector3 totalD = vector3(vector4(a_pOther->m_v3Center, 0.0f) * a_pOther->m_m4ToWorld - vector4(m_v3Center, 0.0f) * m_m4ToWorld);
-	vector3 centerPoint = vector3((m_v3MaxG.x + m_v3MinG.x) / 2, (m_v3MaxG.y + m_v3MinG.y) / 2, (m_v3MaxG.z + m_v3MinG.z) / 2);
-	vector3 centerPointOther = vector3((a_pOther->m_v3MaxG.x + a_pOther->m_v3MinG.x) / 2, (a_pOther->m_v3MaxG.y + a_pOther->m_v3MinG.y) / 2, (a_pOther->m_v3MaxG.z + a_pOther->m_v3MinG.z) / 2);
-	vector3 totalD = centerPointOther - centerPoint;
-	totalD = vector3(glm::dot(totalD, axes[0]), glm::dot(totalD, axes[1]), glm::dot(totalD, axes[2]));
-	//The distances from the center to the end of the box on this axis
-	float dist, distOth;
-	//Checking the axes of this object
-	for(int i = 0; i < 3; i++)
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) 
 	{
-		//dist = m_v3HalfWidth[i];
-		dist = centerPoint[i] + m_v3MaxG[i];
-		distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[i][0] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[i][1] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[i][2];
-		if(abs(totalD[i]) > dist + distOth)
-			return 1;
+		ra = a.e[i];
+		rb = b.e[0] * AbsR[i][0] + b.e[1] * AbsR[i][1] + b.e[2] * AbsR[i][2];
+		if (glm::abs(t[i]) > ra + rb) return 1;
 	}
 
-	//Checking based on the axes of the other object
-	for(int i = 0; i < 3; i++)
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) 
 	{
-		dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[i][0] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[i][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[i][2];
-		distOth = centerPointOther[i] + a_pOther->m_v3MaxG[i];
-		if (abs((totalD[0] * rotation[0][i]) + (totalD[1] * rotation[1][i]) + (totalD[2] * rotation[2][i])) > dist + distOth)
-			return 1;
+		ra = a.e[0] * AbsR[0][i] + a.e[1] * AbsR[1][i] + a.e[2] * AbsR[2][i];
+		rb = b.e[i];
+		if (glm::abs(t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i]) > ra + rb) return 1;
 	}
-	//Checking X-Axis cross other axes
 
-	//Check; this.x-axis cross other.x-axis
-	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][0] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[1][0];
-	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[0][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[0][1];
-	if (abs((totalD[2] * rotation[1][0]) - (totalD[1] * rotation[2][0])) > dist + distOth)
-		return 1;
+	// Test axis L = A0 x B0
+	ra = a.e[1] * AbsR[2][0] + a.e[2] * AbsR[1][0];
+	rb = b.e[1] * AbsR[0][2] + b.e[2] * AbsR[0][1];
+	if (glm::abs(t[2] * R[1][0] - t[1] * R[2][0]) > ra + rb) return 1;
 
-	//Check; this.x-axis cross other.y-axis
-	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[1][1];
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[0][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[0][0];
-	if (abs((totalD[2] * rotation[1][1]) - (totalD[1] * rotation[2][1])) > dist + distOth)
-		return 1;
+	// Test axis L = A0 x B1
+	ra = a.e[1] * AbsR[2][1] + a.e[2] * AbsR[1][1];
+	rb = b.e[0] * AbsR[0][2] + b.e[2] * AbsR[0][0];
+	if (glm::abs(t[2] * R[1][1] - t[1] * R[2][1]) > ra + rb) return 1;
 
-	//Check; this.x-axis cross other.z-axis
-	dist = (centerPoint[1] + m_v3MaxG[1]) * rotationO[2][2] + (m_v3HalfWidth[2] * rotationO[1][2]);
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[0][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[0][0];
-	if (abs((totalD[2] * rotation[1][2]) - (totalD[1] * rotation[2][2])) > dist + distOth)
-		return 1;
+	// Test axis L = A0 x B2
+	ra = a.e[1] * AbsR[2][2] + a.e[2] * AbsR[1][2];
+	rb = b.e[0] * AbsR[0][1] + b.e[1] * AbsR[0][0];
+	if (glm::abs(t[2] * R[1][2] - t[1] * R[2][2]) > ra + rb) return 1;
 
-	//Done checking X-axis, moving to Y-Axis cross other axes
+	// Test axis L = A1 x B0
+	ra = a.e[0] * AbsR[2][0] + a.e[2] * AbsR[0][0];
+	rb = b.e[1] * AbsR[1][2] + b.e[2] * AbsR[1][1];
 
-	//Check; this.y-axis cross other.x-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][0] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][0];
-	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[1][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[1][1];
-	if (abs((totalD[0] * rotation[2][0]) - (totalD[2] * rotation[0][0])) > dist + distOth)
-		return 1;
+	if (glm::abs(t[0] * R[2][0] - t[2] * R[0][0]) > ra + rb) return 1;
 
-	//Check; this.y-axis cross other.y-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][1] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][1];
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[1][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[1][0];
-	if (abs((totalD[0] * rotation[2][1]) - (totalD[2] * rotation[0][1])) > dist + distOth)
-		return 1;
+	// Test axis L = A1 x B1
+	ra = a.e[0] * AbsR[2][1] + a.e[2] * AbsR[0][1];
+	rb = b.e[0] * AbsR[1][2] + b.e[2] * AbsR[1][0];
+	if (glm::abs(t[0] * R[2][1] - t[2] * R[0][1]) > ra + rb) return 1;
 
-	//Check; this.y-axis cross other.z-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[2][2] + (centerPoint[2] + m_v3MaxG[2]) * rotationO[0][2];
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[1][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[1][0];
-	if (abs((totalD[0] * rotation[2][2]) - (totalD[2] * rotation[0][2])) > dist + distOth)
-		return 1;
+	// Test axis L = A1 x B2
+	ra = a.e[0] * AbsR[2][2] + a.e[2] * AbsR[0][2];
+	rb = b.e[0] * AbsR[1][1] + b.e[1] * AbsR[1][0];
+	if (glm::abs(t[0] * R[2][2] - t[2] * R[0][2]) > ra + rb) return 1;
 
-	//Done with Y-axis; moving to  Z-axis cross other axes
+	// Test axis L = A2 x B0
+	ra = a.e[0] * AbsR[1][0] + a.e[1] * AbsR[0][0];
+	rb = b.e[1] * AbsR[2][2] + b.e[2] * AbsR[2][1];
+	if (glm::abs(t[1] * R[0][0] - t[0] * R[1][0]) > ra + rb) return 1;
 
-	//Check; this.z-axis cross other.x-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][0] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][0];
-	distOth = (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[2][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[2][1];
-	if (abs((totalD[1] * rotation[0][0]) - (totalD[0] * rotation[1][0])) > dist + distOth)
-		return 1;
+	// Test axis L = A2 x B1
+	ra = a.e[0] * AbsR[1][1] + a.e[1] * AbsR[0][1];
+	rb = b.e[0] * AbsR[2][2] + b.e[2] * AbsR[2][0];
+	if (glm::abs(t[1] * R[0][1] - t[0] * R[1][1]) > ra + rb) return 1;
 
-	//Check; this.z-axis cross other.y-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][1] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][1];
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[2][2] + (centerPointOther[2] + a_pOther->m_v3MaxG[2]) * rotationO[2][0];
-	if (abs((totalD[1] * rotation[0][1]) - (totalD[0] * rotation[1][1])) > dist + distOth)
-		return 1;
-
-	//Check; this.z-axis cross other.z-axis
-	dist = (centerPoint[0] + m_v3MaxG[0]) * rotationO[1][2] + (centerPoint[1] + m_v3MaxG[1]) * rotationO[0][2];
-	distOth = (centerPointOther[0] + a_pOther->m_v3MaxG[0]) * rotationO[2][1] + (centerPointOther[1] + a_pOther->m_v3MaxG[1]) * rotationO[2][0];
-	if (abs((totalD[1] * rotation[0][2]) - (totalD[0] * rotation[1][2])) > dist + distOth)
-		return 1;
+	// Test axis L = A2 x B2
+	ra = a.e[0] * AbsR[1][2] + a.e[1] * AbsR[0][2];
+	rb = b.e[0] * AbsR[2][1] + b.e[1] * AbsR[2][0];
+	if (glm::abs(t[1] * R[0][2] - t[0] * R[1][2]) > ra + rb) return 1;
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
