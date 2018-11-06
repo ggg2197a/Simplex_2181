@@ -1,21 +1,19 @@
 #include "MyOctant.h"
 using namespace Simplex;
+using namespace std;
 
 Simplex::MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 {
+	m_uMaxLevel = a_nMaxLevel;
+	m_uIdealEntityCount = a_nIdealEntityCount;
+	m_v3Min = vector3(-36, -36, -36);
+	m_v3Max = vector3(36, 36, 36);
+	m_pEntityMngr = EntityManager::GetInstance();
+	m_pMeshMngr = MeshManager::GetInstance();
 }
 
 Simplex::MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
 {
-}
-
-Simplex::MyOctant::MyOctant(MyOctant const & other)
-{
-}
-
-MyOctant& Simplex::MyOctant::operator=(MyOctant const & other)
-{
-	// TODO: insert return statement here
 }
 
 Simplex::MyOctant::~MyOctant(void)
@@ -28,22 +26,22 @@ void Simplex::MyOctant::Swap(MyOctant & other)
 
 float Simplex::MyOctant::GetSize(void)
 {
-	return 0.0f;
+	return m_fSize;
 }
 
 vector3 Simplex::MyOctant::GetCenterGlobal(void)
 {
-	return vector3();
+	return m_v3Center;
 }
 
 vector3 Simplex::MyOctant::GetMinGlobal(void)
 {
-	return vector3();
+	return m_v3Min;
 }
 
 vector3 Simplex::MyOctant::GetMaxGlobal(void)
 {
-	return vector3();
+	return m_v3Max;
 }
 
 bool Simplex::MyOctant::IsColliding(uint a_uRBIndex)
@@ -71,18 +69,22 @@ void Simplex::MyOctant::Subdivide(void)
 {
 }
 
-MyOctant * Simplex::MyOctant::GetChild(uint a_nChild)
+MyOctant* Simplex::MyOctant::GetChild(uint a_nChild)
 {
-	return nullptr;
+	return m_pChild[a_nChild];
 }
 
 MyOctant * Simplex::MyOctant::GetParent(void)
 {
-	return nullptr;
+	if(m_pParent == nullptr)
+		return nullptr;
+	return m_pParent;
 }
 
 bool Simplex::MyOctant::IsLeaf(void)
 {
+	if(m_uChildren == 0)
+		return true;
 	return false;
 }
 
@@ -105,7 +107,7 @@ void Simplex::MyOctant::AssignIDtoEntity(void)
 
 uint Simplex::MyOctant::GetOctantCount(void)
 {
-	return uint();
+	return m_uOctantCount;
 }
 
 void Simplex::MyOctant::Release(void)

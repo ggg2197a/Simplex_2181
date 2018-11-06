@@ -2,8 +2,8 @@
 Programmer: Gregory Gonzalez (ggg2197@gmail.com)
 Date: 2017/07
 ----------------------------------------------*/
-#ifndef __OCTANTCLASS_H_
-#define __OCTANTCLASS_H_
+#ifndef __MYOCTANTCLASS_H_
+#define __MYOCTANTCLASS_H_
 
 #include "Simplex\Physics\EntityManager.h"
 
@@ -47,7 +47,7 @@ namespace Simplex
 		- uint nIdealEntityCount = 5 -> Sets the ideal level of objects per octant
 		OUTPUT: class object
 		*/
-		MyOctant(uint a_nMaxLevel = 2, uint a_nIdealEntityCount = 5);
+		MyOctant(uint a_nMaxLevel = 2, uint a_nIdealEntityCount = 20);
 		/*
 		USAGE: Constructor
 		ARGUMENTS:
@@ -222,7 +222,7 @@ namespace Simplex
 
 } //namespace Simplex
 
-#endif //__OCTANTCLASS_H_
+#endif //__MYOCTANTCLASS_H_
 
   /*
   USAGE:
