@@ -14,67 +14,76 @@ Simplex::MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 	ConstructTree(m_uMaxLevel);
 }
 
-Simplex::MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
-{
-}
-
+//Copy Constructor
 Simplex::MyOctant::MyOctant(MyOctant const & other)
 {
 }
 
+//Copy Assignment Operator
 MyOctant & Simplex::MyOctant::operator=(MyOctant const & other)
 {
 	// TODO: insert return statement here
 }
 
+//Destructor
 Simplex::MyOctant::~MyOctant(void)
 {
 }
 
+//Changes object contents for the other object's
 void Simplex::MyOctant::Swap(MyOctant & other)
 {
 }
 
+//Accessor - Size
 float Simplex::MyOctant::GetSize(void)
 {
 	return m_fSize;
 }
 
+//Accessor - center in global coordinates
 vector3 Simplex::MyOctant::GetCenterGlobal(void)
 {
 	return m_v3Center;
 }
 
+//Accessor - get minimum in global coordinates
 vector3 Simplex::MyOctant::GetMinGlobal(void)
 {
 	return m_v3Min;
 }
 
+//Accessor - get maximum in global coordinates
 vector3 Simplex::MyOctant::GetMaxGlobal(void)
 {
 	return m_v3Max;
 }
 
+//Checks if this object is colliding with the object in the EntityManager 
 bool Simplex::MyOctant::IsColliding(uint a_uRBIndex)
 {
 	return false;
 }
 
+//Display the octant based on index
 void Simplex::MyOctant::Display(uint a_nIndex, vector3 a_v3Color)
 {
 	//MeshManager::AddWireCubeToRenderList();
 }
 
+//Display all octants with this color
 void Simplex::MyOctant::Display(vector3 a_v3Color)
 {
 	//MeshManager::AddWireCubeToRenderList();
 }
 
+//Display only leaf octants with this color
 void Simplex::MyOctant::DisplayLeafs(vector3 a_v3Color)
 {
 	//MeshManager::AddWireCubeToRenderList();
 }
 
+//Clear the list of every octant
 void Simplex::MyOctant::ClearEntityList(void)
 {
 }
@@ -191,8 +200,12 @@ bool Simplex::MyOctant::ContainsMoreThan(uint a_nEntities)
 	return false;
 }
 
+//Deletes all octants of this tree except for the root
 void Simplex::MyOctant::KillBranches(void)
 {
+	/*Travel down the tree until leaves are found to be the children.
+	  Then, delete the children before deleting the object itself
+	   If it is the root, it will NOT delete itself. Only branches down to the leaves.*/
 }
 
 //Construct the tree from the beginning
@@ -213,8 +226,11 @@ void Simplex::MyOctant::ConstructTree(uint a_nMaxLevel)
 
 void Simplex::MyOctant::AssignIDtoEntity(void)
 {
+	/*Assign an ID to the Entity - I believe this means to assign the Octant's ID to the Entities inside of it
+	  This allows collision to only be checked with objects that share IDs. May be right? */
 }
 
+//Accessor - Gives count of octants currently existing
 uint Simplex::MyOctant::GetOctantCount(void)
 {
 	return m_uOctantCount;

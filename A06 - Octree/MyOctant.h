@@ -49,14 +49,6 @@ namespace Simplex
 		*/
 		MyOctant(uint a_nMaxLevel = 2, uint a_nIdealEntityCount = 20);
 		/*
-		USAGE: Constructor
-		ARGUMENTS:
-		- vector3 a_v3Center -> Center of the octant in global space
-		- float a_fSize -> size of each side of the octant volume
-		OUTPUT: class object
-		*/
-		MyOctant(vector3 a_v3Center, float a_fSize);
-		/*
 		USAGE: Copy Constructor
 		ARGUMENTS: class object to copy
 		OUTPUT: class object instance
