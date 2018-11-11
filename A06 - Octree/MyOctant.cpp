@@ -86,6 +86,12 @@ void Simplex::MyOctant::DisplayLeafs(vector3 a_v3Color)
 //Clear the list of every octant
 void Simplex::MyOctant::ClearEntityList(void)
 {
+	m_EntityList.clear();
+	if (!IsLeaf())
+	{
+		for (int i = 0; i < 8; i++)
+			m_pChild[i]->ClearEntityList();
+	}
 }
 
 void Simplex::MyOctant::Subdivide(void)
@@ -206,6 +212,19 @@ void Simplex::MyOctant::KillBranches(void)
 	/*Travel down the tree until leaves are found to be the children.
 	  Then, delete the children before deleting the object itself
 	   If it is the root, it will NOT delete itself. Only branches down to the leaves.*/
+	if (!IsLeaf())//If this isn't a leaf, go forward
+	{
+		for (int i = 0; i < 8; i++)
+			m_pChild[i]->KillBranches();//Call this method for all children
+		if (m_pChild[0]->IsLeaf())//If this object's children are leaves, we can start deleting
+		{
+			for(int i = 0; i < 8; i++)
+				SafeDelete(m_pChild[i]);
+			m_uChildren = 0;
+		}
+	}
+	else
+		return;
 }
 
 //Construct the tree from the beginning
