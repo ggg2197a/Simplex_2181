@@ -5,13 +5,13 @@ Date: 2017/07
 #ifndef __MYOCTANTCLASS_H_
 #define __MYOCTANTCLASS_H_
 
-#include "Simplex\Physics\EntityManager.h"
+#include "MyEntityManager.h"
 
 namespace Simplex
 {
 
 	//System Class
-	class SimplexDLL MyOctant
+	class MyOctant
 	{
 		static uint m_uOctantCount; //will store the number of octants instantiated
 		static uint m_uMaxLevel;//will store the maximum level an octant can go to
@@ -24,7 +24,7 @@ namespace Simplex
 		float m_fSize = 0.0f; //Size of the octant
 
 		MeshManager* m_pMeshMngr = nullptr;//Mesh Manager singleton
-		EntityManager* m_pEntityMngr = nullptr; //Entity Manager Singleton
+		MyEntityManager* m_pEntityMngr = nullptr; //Entity Manager Singleton
 
 		vector3 m_v3Center = vector3(0.0f); //Will store the center point of the octant
 		vector3 m_v3Min = vector3(0.0f); //Will store the minimum vector of the octant
@@ -47,7 +47,15 @@ namespace Simplex
 		- uint nIdealEntityCount = 5 -> Sets the ideal level of objects per octant
 		OUTPUT: class object
 		*/
-		MyOctant(uint a_nMaxLevel = 2, uint a_nIdealEntityCount = 20);
+		MyOctant(uint a_nMaxLevel = 3, uint a_nIdealEntityCount = 5);
+		/*
+		USAGE: Constructor
+		ARGUMENTS:
+		- vector3 a_v3Center -> Center of the octant in global space
+		- float a_fSize -> size of each side of the octant volume
+		OUTPUT: class object
+		*/
+		MyOctant(vector3 a_v3Center, float a_fSize);
 		/*
 		USAGE: Copy Constructor
 		ARGUMENTS: class object to copy
