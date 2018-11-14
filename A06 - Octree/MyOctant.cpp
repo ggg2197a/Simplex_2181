@@ -272,7 +272,7 @@ void Simplex::MyOctant::Subdivide(void)
 	m_uChildren = 8;
 
 	float childSize = m_fSize / 4.0f;
-	float childDiam = childSize * 2.0f;
+	float childDiam = m_fSize / 2.0f;
 	vector3 center;
 
 	//Bottom Left Back Octant
@@ -314,7 +314,7 @@ void Simplex::MyOctant::Subdivide(void)
 	{
 		m_pChild[i]->m_pRoot = m_pRoot;
 		m_pChild[i]->m_pParent = this;
-		m_pChild[i]->m_uLevel = m_uLevel++;
+		m_pChild[i]->m_uLevel = m_uLevel + 1;
 		if(m_pChild[i]->ContainsMoreThan(m_uIdealEntityCount))
 		{
 			m_pChild[i]->Subdivide();
@@ -409,7 +409,9 @@ void Simplex::MyOctant::AssignIDtoEntity(void)
 {
 	//Go until a leaf is reached
 	for (int i = 0; i < m_uChildren; i++)
+	{
 		m_pChild[i]->AssignIDtoEntity();
+	}
 
 	//If it's a leaf, move forward
 	if(m_uChildren == 0)
@@ -479,5 +481,5 @@ void Simplex::MyOctant::ConstructList(void)
 
 	//If this object has an object in it, add it to the list
 	if (m_EntityList.size() > 0)
-		m_pRoot->m_lChild.push_back(this);
+		m_pParent->m_lChild.push_back(this);
 }

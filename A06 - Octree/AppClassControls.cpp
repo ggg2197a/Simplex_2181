@@ -136,6 +136,8 @@ void Application::ProcessKeyReleased(sf::Event a_event)
 			m_pEntityMngr->ClearDimensionSetAll();
 			--m_uOctantLevels;
 			SafeDelete(m_pRoot);
+			if(m_uOctantLevels < 0)
+				m_uOctantLevels = 1;
 			m_pRoot = new MyOctant(m_uOctantLevels, 5);
 		}
 		break;
