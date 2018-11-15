@@ -207,9 +207,9 @@ bool Simplex::MyOctant::IsColliding(uint a_uRBIndex)
 		return false;
 
 	//Checking Z
-	if (m_v3Max.x < minCheck.x)
+	if (m_v3Max.z < minCheck.z)
 		return false;
-	if (m_v3Min.x > maxCheck.x)
+	if (m_v3Min.z > maxCheck.z)
 		return false;
 
 	//If it got through all these checks they are colliding
@@ -476,8 +476,11 @@ void Simplex::MyOctant::Init(void)
 void Simplex::MyOctant::ConstructList(void)
 {
 	//Call this method for every node of the tree
-	for (int i = 0; i < m_uChildren; i++)
-		m_pChild[i]->ConstructList();
+	if(m_pChild[0] != nullptr)
+	{
+		for (int i = 0; i < m_uChildren; i++)
+			m_pChild[i]->ConstructList();
+	}
 
 	//If this object has an object in it, add it to the list
 	if (m_EntityList.size() > 0)
